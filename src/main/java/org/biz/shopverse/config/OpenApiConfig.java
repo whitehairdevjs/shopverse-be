@@ -22,7 +22,7 @@ public class OpenApiConfig {
         return new OpenAPI()
             // 1) API 기본 정보 설정
             .info(new Info()
-                .title("JS 애플리케이션 API 문서")
+                .title("ShopVerse 애플리케이션 API 문서")
                 .version("v1.0.0")
                 .description("js world Spring Boot Server")
                 .contact(new Contact()
