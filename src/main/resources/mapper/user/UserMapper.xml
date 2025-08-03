@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.biz.shopverse.mapper.user.UserMapper">
+    <select id="selectUserById" resultType="org.biz.shopverse.dto.user.UserResponse">
+        select
+            ui.id
+             , ui.user_id
+             , ui.user_name
+             , ui.password
+             , ui.user_uuid
+             , ui.mobile_number
+             , ui.birth
+             , ui.zipcode
+             , ui.address
+             , ui.address_detail
+             , ur.role_id
+             , r.role_code
+        from user_info ui
+            inner join user_roles ur
+                on ur.user_id = ui.user_id
+            inner join roles r
+                on r.role_id = ur.role_id
+        where 1 = 1
+        and ui.user_id = #{userId};
+    </select>
+
+    <select id="findByUserId" resultType="org.biz.shopverse.dto.user.UserResponse">
+        select
+            user_id
+            , password
+        from user_info
+        where 1 = 1
+        and user_id = #{userId};
+    </select>
+
+    <select id="findRolesByUserId" resultType="string">
+        select
+            r.role_code
+        from user_roles ur
+            inner join roles r
+            on ur.role_id = r.role_id
+        where 1 = 1
+        and ur.user_id = #{userId};
+    </select>
+</mapper>
