@@ -24,7 +24,7 @@ public class OpenApiConfig {
             .info(new Info()
                 .title("ShopVerse 애플리케이션 API 문서")
                 .version("v1.0.0")
-                .description("js world Spring Boot Server")
+                .description("ShopVerse Api")
                 .contact(new Contact()
                     .name("Jae Sung Kim")
                     .email("jsuserwork20@gmail.com")
