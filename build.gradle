@@ -20,6 +20,7 @@ repositories {
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3' // mybatis
+    implementation 'org.springframework.boot:spring-boot-starter-validation' // validation check
     implementation 'org.springframework.boot:spring-boot-starter-aop' // aop
     implementation 'org.postgresql:postgresql:42.7.2' // postgresql
     implementation 'org.springframework.boot:spring-boot-starter-security' // spring security

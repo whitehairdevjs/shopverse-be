@@ -27,4 +27,12 @@
         FROM members m
         WHERE login_id = #{loginId}
     </select>
+
+    <select id="existsByLoginId" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1 
+            FROM members 
+            WHERE login_id = #{loginId}
+        )
+    </select>
 </mapper> 
