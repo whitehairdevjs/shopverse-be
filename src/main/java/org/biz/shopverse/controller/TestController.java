@@ -1,7 +1,6 @@
 package org.biz.shopverse.controller;
 
 import org.biz.shopverse.dto.auth.TokenRequest;
-import org.biz.shopverse.dto.user.UserRequest;
 import org.biz.shopverse.security.JwtTokenProvider;
 import org.biz.shopverse.service.TestService;
 import org.biz.shopverse.service.auth.JwtTokenRedisService;
@@ -20,11 +19,6 @@ public class TestController {
     @GetMapping("hello")
     public String hello() {
         return testService.getString();
-    }
-
-    @PostMapping("getRtoken")
-    public String getRtoken(@RequestBody UserRequest userRequest) {
-        return jwtTokenRedisService.getRefreshToken(userRequest.getUserId());
     }
 
     @PostMapping("get-role")

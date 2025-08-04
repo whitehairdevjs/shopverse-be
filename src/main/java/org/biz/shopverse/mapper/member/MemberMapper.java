@@ -1,7 +1,12 @@
 package org.biz.shopverse.mapper.member;
 
-import org.biz.shopverse.domain.member.Member;
+import org.biz.shopverse.dto.auth.MemberWithRoles;
+import org.biz.shopverse.dto.member.response.MemberResponse;
 
 public interface MemberMapper {
-    Member findByLoginId(String loginId);
+    MemberResponse findByLoginId(String loginId);
+
+    boolean existsByLoginId(String loginId);
+
+    MemberWithRoles findByMemberWithRoles(String loginId);
 } 

@@ -1,7 +1,8 @@
 package org.biz.shopverse.service.auth;
 
-import org.biz.shopverse.dto.user.UserResponse;
-import org.biz.shopverse.service.user.UserService;
+import org.biz.shopverse.dto.auth.MemberWithRoles;
+import org.biz.shopverse.dto.member.response.MemberResponse;
+import org.biz.shopverse.service.member.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -21,22 +22,22 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
-    private final UserService userService;
+    private final MemberService memberService;
 
     @Override
-    public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
-        UserResponse resUser = userService.findByUserId(userId);
+    public UserDetails loadUserByUsername(String loginId) throws UsernameNotFoundException {
+        MemberWithRoles resUser = memberService.findByMemberWithRoles(loginId);
 
         if (resUser == null) {
-            throw new UsernameNotFoundException("User not found: " + userId);
+            throw new UsernameNotFoundException("User not found: " + loginId);
         }
         // DB에서 가져온 role 문자열을 GrantedAuthority 리스트로 변환
-        List<GrantedAuthority> auths = userService.findRolesByUserId(resUser.getUserId())
+        List<GrantedAuthority> auths = resUser.getRoles()
                 .stream()
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
 
-        return User.withUsername(resUser.getUserId())
+        return User.withUsername(resUser.getLoginId())
                 .password(resUser.getPassword())
                 .authorities(auths)
                 .build();
