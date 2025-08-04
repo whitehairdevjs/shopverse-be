@@ -1,6 +1,7 @@
 package org.biz.shopverse.security;
 
-import org.biz.shopverse.common.util.ResponseUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.biz.shopverse.dto.error.ErrorResponse;
 import org.biz.shopverse.exception.auth.JwtInvalidException;
 import org.biz.shopverse.exception.auth.JwtTokenExpiredException;
 import org.biz.shopverse.service.auth.CustomUserDetailsService;
@@ -16,6 +17,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -38,10 +41,24 @@ public class JwtFilter extends OncePerRequestFilter {
 
             filterChain.doFilter(request, response);
         } catch (JwtTokenExpiredException e) {
-            ResponseUtil.writeUnauthorizedError(response, "TOKEN_EXPIRED", e.getMessage());
+            writeJwtErrorResponse(response, "JWT Token Expired", "토큰이 만료되었습니다.", request.getRequestURI());
         } catch (JwtInvalidException e) {
-            ResponseUtil.writeUnauthorizedError(response, "INVALID_TOKEN", e.getMessage());
+            writeJwtErrorResponse(response, "Invalid JWT Token", "유효하지 않은 토큰입니다.", request.getRequestURI());
         }
+    }
+
+    private void writeJwtErrorResponse(HttpServletResponse response, String error, String message, String path) throws IOException {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpServletResponse.SC_UNAUTHORIZED)
+                .error(error)
+                .message(message)
+                .details(Map.of("path", path))
+                .build();
+
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write(new ObjectMapper().writeValueAsString(errorResponse));
     }
 
     private String resolveToken(HttpServletRequest request) {

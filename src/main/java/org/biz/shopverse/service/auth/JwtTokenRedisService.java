@@ -15,8 +15,8 @@ public class JwtTokenRedisService {
     /**
      * Refresh Token 저장
      */
-    public void saveRefreshToken(String userId, String refreshToken, long expirationMillis) {
-        redisTemplate.opsForValue().set("RT:" + userId, refreshToken, Duration.ofMillis(expirationMillis));
+    public void saveRefreshToken(String userId, String refreshToken, long refreshTokenValidityInMs) {
+        redisTemplate.opsForValue().set("RT:" + userId, refreshToken, Duration.ofMillis(refreshTokenValidityInMs));
     }
 
     /**
