@@ -22,12 +22,6 @@ public class JwtTokenProvider {
     @Value("${jwt.issuer}")
     private String issuer;
 
-    @Value("${jwt.access-token-expiration}")
-    private long accessTokenValidityInMs;
-
-    @Value("${jwt.refresh-token-expiration}")
-    private long refreshTokenValidityInMs;
-
     private Key key;
 
     @PostConstruct
@@ -35,7 +29,7 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    public String generateAccessToken(String userId, String role) {
+    public String generateAccessToken(String userId, String role, long accessTokenValidityInMs) {
         return Jwts.builder()
                 .setSubject(userId)
                 .claim("role", role)
@@ -46,7 +40,7 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public String generateRefreshToken(String userId) {
+    public String generateRefreshToken(String userId, long refreshTokenValidityInMs) {
         return Jwts.builder()
                 .setSubject(userId)
                 .setIssuer(issuer)
