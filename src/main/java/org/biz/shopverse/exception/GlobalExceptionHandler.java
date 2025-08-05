@@ -1,7 +1,7 @@
 package org.biz.shopverse.exception;
 
 import lombok.extern.slf4j.Slf4j;
-import org.biz.shopverse.dto.error.ErrorResponse;
+import org.biz.shopverse.dto.common.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,18 +16,8 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private ErrorResponse createErrorResponse(HttpStatus status, String error, String message, Map<String, Object> details) {
-        return ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(status.value())
-                .error(error)
-                .message(message)
-                .details(details)
-                .build();
-    }
-
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationErrors(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleValidationErrors(MethodArgumentNotValidException ex) {
         log.warn("Validation error occurred: {}", ex.getMessage());
         
         Map<String, Object> errors = new HashMap<>();
@@ -42,47 +31,67 @@ public class GlobalExceptionHandler {
             errors.put("global", error.getDefaultMessage())
         );
 
-        return ResponseEntity.badRequest()
-                .body(createErrorResponse(HttpStatus.BAD_REQUEST, "Validation Error", "입력값 검증에 실패했습니다.", errors));
+        ApiResponse<Map<String, Object>> errorResponse = ApiResponse.error("Validation Error", "입력값 검증에 실패했습니다.", 400);
+        errorResponse.setDetails(errors);
+
+        return ResponseEntity.badRequest().body(errorResponse);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex, WebRequest request) {
+    public ResponseEntity<ApiResponse<String>> handleGlobalException(Exception ex, WebRequest request) {
         log.error("Unhandled exception occurred: {}", ex.getMessage(), ex);
         
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(createErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", "서버 내부 오류가 발생했습니다.", 
-                        Map.of("path", request.getDescription(false))));
+        Map<String, Object> details = new HashMap<>();
+        details.put("path", request.getDescription(false));
+        details.put("exception", ex.getClass().getSimpleName());
+        
+        ApiResponse<String> errorResponse = ApiResponse.error("Internal Server Error", "서버 내부 오류가 발생했습니다.", 500);
+        errorResponse.setDetails(details);
+        
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex, WebRequest request) {
+    public ResponseEntity<ApiResponse<String>> handleIllegalArgumentException(IllegalArgumentException ex, WebRequest request) {
         log.warn("Illegal argument exception: {}", ex.getMessage());
         
-        return ResponseEntity.badRequest()
-                .body(createErrorResponse(HttpStatus.BAD_REQUEST, "Invalid Argument", ex.getMessage(), 
-                        Map.of("path", request.getDescription(false))));
+        Map<String, Object> details = new HashMap<>();
+        details.put("path", request.getDescription(false));
+        details.put("exception", ex.getClass().getSimpleName());
+        
+        ApiResponse<String> errorResponse = ApiResponse.error("Invalid Argument", ex.getMessage(), 400);
+        errorResponse.setDetails(details);
+        
+        return ResponseEntity.badRequest().body(errorResponse);
     }
 
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex, WebRequest request) {
+    public ResponseEntity<ApiResponse<String>> handleRuntimeException(RuntimeException ex, WebRequest request) {
         log.warn("Runtime exception: {}", ex.getMessage());
         
-        return ResponseEntity.badRequest()
-                .body(createErrorResponse(HttpStatus.BAD_REQUEST, "Runtime Error", ex.getMessage(), 
-                        Map.of("path", request.getDescription(false))));
+        Map<String, Object> details = new HashMap<>();
+        details.put("path", request.getDescription(false));
+        details.put("exception", ex.getClass().getSimpleName());
+        
+        ApiResponse<String> errorResponse = ApiResponse.error("Runtime Error", ex.getMessage(), 400);
+        errorResponse.setDetails(details);
+        
+        return ResponseEntity.badRequest().body(errorResponse);
     }
 
     @ExceptionHandler(CustomBusinessException.class)
-    public ResponseEntity<ErrorResponse> handleCustomBusinessException(CustomBusinessException ex, WebRequest request) {
+    public ResponseEntity<ApiResponse<String>> handleCustomBusinessException(CustomBusinessException ex, WebRequest request) {
         log.warn("Custom business exception: {} - Error Code: {}", ex.getMessage(), ex.getErrorCode());
         
         Map<String, Object> details = new HashMap<>();
-        details.put("errorCode", ex.getErrorCode());
         details.put("path", request.getDescription(false));
+        details.put("errorCode", ex.getErrorCode());
+        details.put("exception", ex.getClass().getSimpleName());
         
-        return ResponseEntity.status(ex.getHttpStatus())
-                .body(createErrorResponse(ex.getHttpStatus(), "Business Error", ex.getMessage(), details));
+        ApiResponse<String> errorResponse = ApiResponse.error("Business Error", ex.getMessage(), ex.getHttpStatus().value());
+        errorResponse.setDetails(details);
+        
+        return ResponseEntity.status(ex.getHttpStatus()).body(errorResponse);
     }
 
 } 

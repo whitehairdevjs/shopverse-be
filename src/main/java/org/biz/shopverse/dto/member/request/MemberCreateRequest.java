@@ -16,12 +16,14 @@ public class MemberCreateRequest {
     
     @Schema(description = "로그인 ID (이메일 또는 사용자명)", example = "user@example.com", required = true)
     @NotBlank(message = "로그인 ID는 필수입니다")
-    @Size(min = 3, max = 50, message = "로그인 ID는 3자 이상 50자 이하여야 합니다")
+    @Size(min = 8, max = 50, message = "로그인 ID는 8자 이상 50자 이하여야 합니다")
     private String loginId;
     
     @Schema(description = "비밀번호", example = "password123!", required = true)
     @NotBlank(message = "비밀번호는 필수입니다")
     @Size(min = 8, max = 100, message = "비밀번호는 8자 이상 100자 이하여야 합니다")
+    @Pattern(regexp = "^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]).*$", 
+             message = "비밀번호는 영문, 숫자, 특수문자를 모두 포함해야 합니다")
     private String password;
     
     @Schema(description = "이름", example = "홍길동", required = true)
