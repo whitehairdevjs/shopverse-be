@@ -15,7 +15,6 @@
             m.birth_date,
             m.is_social,
             m.social_provider,
-            m.role,
             m.marketing_yn,
             m.sms_yn,
             m.email_yn,
@@ -35,4 +34,44 @@
             WHERE login_id = #{loginId}
         )
     </select>
+
+    <insert id="createMember" parameterType="org.biz.shopverse.dto.member.request.MemberCreateRequest">
+        INSERT INTO members (
+            login_id,
+            password,
+            name,
+            nickname,
+            phone,
+            email,
+            gender,
+            birth_date,
+            is_social,
+            social_provider,
+            marketing_yn,
+            sms_yn,
+            email_yn,
+            point,
+            status,
+            created_at,
+            updated_at
+        ) VALUES (
+            #{loginId},
+            #{password},
+            #{name},
+            #{nickname},
+            #{phone},
+            #{email},
+            #{gender},
+            #{birthDate},
+            #{isSocial},
+            #{socialProvider},
+            #{marketingYn},
+            #{smsYn},
+            #{emailYn},
+            0,
+            'ACTIVE',
+            NOW(),
+            NOW()
+        )
+    </insert>
 </mapper> 

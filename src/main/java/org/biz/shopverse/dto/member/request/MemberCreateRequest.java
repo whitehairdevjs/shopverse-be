@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -45,9 +47,8 @@ public class MemberCreateRequest {
     @Pattern(regexp = "^[MFU]$", message = "성별은 M, F, U 중 하나여야 합니다")
     private String gender = "U";
     
-    @Schema(description = "생년월일 (YYYY-MM-DD)", example = "1990-01-01")
-    @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "생년월일 형식이 올바르지 않습니다 (YYYY-MM-DD)")
-    private String birthDate;
+    @Schema(description = "생년월일", example = "1990-01-01")
+    private LocalDate birthDate;
     
     @Schema(description = "소셜 로그인 여부", example = "false")
     private Boolean isSocial = false;
