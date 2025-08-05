@@ -1,7 +1,7 @@
 package org.biz.shopverse.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.biz.shopverse.dto.error.ErrorResponse;
+import org.biz.shopverse.dto.common.ApiResponse;
 import org.biz.shopverse.exception.auth.JwtInvalidException;
 import org.biz.shopverse.exception.auth.JwtTokenExpiredException;
 import jakarta.servlet.FilterChain;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 @Component
@@ -48,13 +48,13 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     private void writeJwtErrorResponse(HttpServletResponse response, String error, String message, String path) throws IOException {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpServletResponse.SC_UNAUTHORIZED)
-                .error(error)
-                .message(message)
-                .details(Map.of("path", path))
-                .build();
+        Map<String, Object> details = new HashMap<>();
+        details.put("path", path);
+        details.put("exception", "JwtAuthenticationException");
+        details.put("tokenType", "JWT");
+        
+        ApiResponse<String> errorResponse = ApiResponse.error(error, message, 401);
+        errorResponse.setDetails(details);
 
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json;charset=UTF-8");

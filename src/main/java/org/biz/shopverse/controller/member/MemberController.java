@@ -2,6 +2,7 @@ package org.biz.shopverse.controller.member;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.biz.shopverse.dto.common.ApiResponse;
 import org.biz.shopverse.dto.member.request.MemberCreateRequest;
 import org.biz.shopverse.service.member.MemberService;
 import org.springframework.http.HttpStatus;
@@ -24,11 +25,11 @@ public class MemberController {
     private final MemberService memberService;
 
     @PostMapping("/signup")
-    public ResponseEntity<String> signup(@RequestBody @Valid MemberCreateRequest memberCreateRequest) {
+    public ResponseEntity<ApiResponse<String>> signup(@RequestBody @Valid MemberCreateRequest memberCreateRequest) {
         if (memberService.signup(memberCreateRequest)) {
-            return ResponseEntity.status(HttpStatus.CREATED).body("회원가입이 완료되었습니다.");
+            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("회원가입이 완료되었습니다."));
         } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("회원가입에 실패했습니다.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("회원가입 실패", "회원가입에 실패했습니다.", 500));
         }
     }
 
