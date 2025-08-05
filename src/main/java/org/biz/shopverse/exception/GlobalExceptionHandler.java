@@ -73,4 +73,16 @@ public class GlobalExceptionHandler {
                         Map.of("path", request.getDescription(false))));
     }
 
+    @ExceptionHandler(CustomBusinessException.class)
+    public ResponseEntity<ErrorResponse> handleCustomBusinessException(CustomBusinessException ex, WebRequest request) {
+        log.warn("Custom business exception: {} - Error Code: {}", ex.getMessage(), ex.getErrorCode());
+        
+        Map<String, Object> details = new HashMap<>();
+        details.put("errorCode", ex.getErrorCode());
+        details.put("path", request.getDescription(false));
+        
+        return ResponseEntity.status(ex.getHttpStatus())
+                .body(createErrorResponse(ex.getHttpStatus(), "Business Error", ex.getMessage(), details));
+    }
+
 } 

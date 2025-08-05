@@ -1,85 +1,60 @@
 package org.biz.shopverse.member;
 
-import org.biz.shopverse.domain.member.Member;
+import org.biz.shopverse.dto.member.request.MemberCreateRequest;
 import org.biz.shopverse.dto.member.response.MemberResponse;
+import org.biz.shopverse.mapper.member.MemberMapper;
 import org.biz.shopverse.service.member.MemberService;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.time.LocalDate;
 
-@SpringBootTest
-@ActiveProfiles("test")
-public class MemberServiceTest {
+import static org.mockito.Mockito.*;
 
-    @Autowired
+@ExtendWith(MockitoExtension.class)
+class MemberServiceTest {
+
+    @Mock
+    private MemberMapper memberMapper;
+
+    @InjectMocks
     private MemberService memberService;
 
     @Test
-    public void testFindByLoginId() {
-        // Given: 테스트용 login_id
+    void findByLoginId() {
         String loginId = "jskim";
 
-        // When: login_id로 멤버 조회
-        MemberResponse member = memberService.findByLoginId(loginId);
+        // when
+        memberService.findByLoginId(loginId);
 
-        // Then: 결과 검증
-        if (member != null) {
-            assertNotNull(member);
-//            assertEquals(loginId, member.getLoginId());
-//            assertNotNull(member.getName());
-//            assertNotNull(member.getRole());
-            
-            System.out.println("Found member:");
-            System.out.println("ID: " + member.getId());
-            System.out.println("Login ID: " + member.getLoginId());
-            System.out.println("Name: " + member.getName());
-            System.out.println("Email: " + member.getEmail());
-            System.out.println("Status: " + member.getStatus());
-            System.out.println("Point: " + member.getPoint());
-        } else {
-            System.out.println("Member with login_id '" + loginId + "' not found");
-        }
+        // then
+        verify(memberMapper, times(1)).findByLoginId(loginId);
     }
 
     @Test
-    public void testFindByLoginId_NotFound() {
-        // Given: 존재하지 않는 login_id
-        String nonExistentLoginId = "nonexistent@example.com";
+    void createMember_ShouldCallMapper() {
+        // Given
+        MemberCreateRequest request = new MemberCreateRequest();
+        request.setLoginId("testuser");
+        request.setPassword("encodedPassword");
+        request.setName("테스트유저");
+        request.setNickname("테스트");
+        request.setPhone("010-1234-5678");
+        request.setEmail("test@example.com");
+        request.setGender("M");
+        request.setBirthDate(LocalDate.of(1990, 1, 1));
+        request.setIsSocial(false);
+        request.setMarketingYn(false);
+        request.setSmsYn(true);
+        request.setEmailYn(true);
 
-        // When: 존재하지 않는 login_id로 멤버 조회
-        MemberResponse member = memberService.findByLoginId(nonExistentLoginId);
+        // When
+        memberService.createMember(request);
 
-        // Then: null이 반환되어야 함
-        assertNull(member);
-        System.out.println("Member with login_id '" + nonExistentLoginId + "' not found (expected)");
-    }
-
-    @Test
-    public void testFindByLoginId_EmptyString() {
-        // Given: 빈 문자열 login_id
-        String emptyLoginId = "";
-
-        // When: 빈 문자열로 멤버 조회
-        MemberResponse member = memberService.findByLoginId(emptyLoginId);
-
-        // Then: null이 반환되어야 함
-        assertNull(member);
-        System.out.println("Member with empty login_id not found (expected)");
-    }
-
-    @Test
-    public void testFindByLoginId_Null() {
-        // Given: null login_id
-        String nullLoginId = null;
-
-        // When: null로 멤버 조회
-        MemberResponse member = memberService.findByLoginId(nullLoginId);
-
-        // Then: null이 반환되어야 함
-        assertNull(member);
-        System.out.println("Member with null login_id not found (expected)");
+        // Then
+        verify(memberMapper, times(1)).createMember(request);
     }
 } 

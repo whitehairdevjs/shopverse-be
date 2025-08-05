@@ -1,6 +1,7 @@
 package org.biz.shopverse.mapper.member;
 
 import org.biz.shopverse.dto.auth.MemberWithRoles;
+import org.biz.shopverse.dto.member.request.MemberCreateRequest;
 import org.biz.shopverse.dto.member.response.MemberResponse;
 
 public interface MemberMapper {
@@ -9,4 +10,6 @@ public interface MemberMapper {
     boolean existsByLoginId(String loginId);
 
     MemberWithRoles findByMemberWithRoles(String loginId);
+
+    int createMember(MemberCreateRequest memberCreateRequest);
 } 
