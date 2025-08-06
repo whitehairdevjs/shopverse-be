@@ -7,10 +7,7 @@ import org.biz.shopverse.dto.member.request.MemberCreateRequest;
 import org.biz.shopverse.service.member.MemberService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  *
@@ -31,6 +28,16 @@ public class MemberController {
         } else {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("회원가입 실패", "회원가입에 실패했습니다.", 500));
         }
+    }
+
+    @GetMapping("/check-login-id")
+    public ResponseEntity<ApiResponse<String>> checkLoginIdDuplication(@RequestParam String loginId) {
+        return ResponseEntity.ok(ApiResponse.success(String.valueOf(memberService.existsByLoginId(loginId))));
+    }
+
+    @GetMapping("/check-email")
+    public ResponseEntity<ApiResponse<String>> checkEmailDuplication(@RequestParam String email) {
+        return ResponseEntity.ok(ApiResponse.success(String.valueOf(memberService.existsByEmail(email))));
     }
 
 }

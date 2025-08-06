@@ -6,7 +6,6 @@ import org.biz.shopverse.dto.member.response.MemberResponse;
 import org.biz.shopverse.exception.CustomBusinessException;
 import org.biz.shopverse.mapper.member.MemberMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,6 +24,10 @@ public class MemberService {
         return memberMapper.existsByLoginId(loginId);
     }
 
+    public boolean existsByEmail(String email) {
+        return memberMapper.existsByEmail(email);
+    }
+
     public MemberWithRoles findByMemberWithRoles(String loginId) {
         return memberMapper.findByMemberWithRoles(loginId);
     }
@@ -40,6 +43,10 @@ public class MemberService {
     public boolean signup(MemberCreateRequest memberCreateRequest) {
         if (existsByLoginId(memberCreateRequest.getLoginId())) {
             throw new CustomBusinessException("이미 사용중인 ID 입니다.", HttpStatus.CONFLICT);
+        }
+
+        if (existsByEmail(memberCreateRequest.getEmail())) {
+            throw new CustomBusinessException("이미 사용중인 이메일 입니다.", HttpStatus.CONFLICT);
         }
 
         String encodedPassword = passwordEncoder.encode(memberCreateRequest.getPassword());

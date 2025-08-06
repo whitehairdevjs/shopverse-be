@@ -35,6 +35,14 @@
         )
     </select>
 
+    <select id="existsByEmail" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1 
+            FROM members 
+            WHERE email = #{email}
+        )
+    </select>
+
     <insert id="createMember" parameterType="org.biz.shopverse.dto.member.request.MemberCreateRequest">
         INSERT INTO members (
             login_id,

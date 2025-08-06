@@ -16,7 +16,7 @@ public class MemberCreateRequest {
     
     @Schema(description = "로그인 ID (이메일 또는 사용자명)", example = "user@example.com", required = true)
     @NotBlank(message = "로그인 ID는 필수입니다")
-    @Size(min = 8, max = 50, message = "로그인 ID는 8자 이상 50자 이하여야 합니다")
+    @Size(min = 5, max = 50, message = "로그인 ID는 5자 이상 20자 이하여야 합니다")
     private String loginId;
     
     @Schema(description = "비밀번호", example = "password123!", required = true)
