@@ -9,6 +9,8 @@ public interface MemberMapper {
 
     boolean existsByLoginId(String loginId);
 
+    boolean existsByEmail(String email);
+
     MemberWithRoles findByMemberWithRoles(String loginId);
 
     int createMember(MemberCreateRequest memberCreateRequest);
