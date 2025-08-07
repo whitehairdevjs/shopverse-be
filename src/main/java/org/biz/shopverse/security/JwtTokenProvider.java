@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -29,15 +30,20 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    public String generateAccessToken(String userId, String role, long accessTokenValidityInMs) {
+    public String generateAccessToken(String userId, List<String> roles, long accessTokenValidityInMs) {
         return Jwts.builder()
                 .setSubject(userId)
-                .claim("role", role)
+                .claim("roles", roles)
                 .setIssuer(issuer)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + accessTokenValidityInMs))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    // 단일 역할을 위한 오버로드 메서드 (하위 호환성 유지)
+    public String generateAccessToken(String userId, String role, long accessTokenValidityInMs) {
+        return generateAccessToken(userId, List.of(role), accessTokenValidityInMs);
     }
 
     public String generateRefreshToken(String userId, long refreshTokenValidityInMs) {
@@ -73,8 +79,15 @@ public class JwtTokenProvider {
         return parseClaims(token).getSubject();
     }
 
+    @SuppressWarnings("unchecked")
+    public List<String> getUserRoles(String token) {
+        return (List<String>) parseClaims(token).get("roles");
+    }
+
+    // 하위 호환성을 위한 단일 역할 반환 메서드
     public String getUserRole(String token) {
-        return (String) parseClaims(token).get("role");
+        List<String> roles = getUserRoles(token);
+        return roles != null && !roles.isEmpty() ? roles.get(0) : null;
     }
 
 }
