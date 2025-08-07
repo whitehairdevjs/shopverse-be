@@ -27,6 +27,28 @@
         WHERE login_id = #{loginId}
     </select>
 
+    <resultMap id="memberWithRolesResultMap" type="org.biz.shopverse.dto.member.MemberWithRoles">
+        <result property="name" column="name"/>
+        <result property="loginId" column="login_id"/>
+        <result property="password" column="password"/>
+        <result property="roles" column="roles" typeHandler="org.apache.ibatis.type.ArrayTypeHandler"/>
+    </resultMap>
+
+    <select id="findByMemberWithRoles" resultMap="memberWithRolesResultMap">
+        SELECT
+            m.name
+            , m.login_id
+            , m."password"
+            , ARRAY_AGG(r.role_code) as roles
+        FROM members m
+            INNER JOIN member_roles mr
+                ON mr.login_id = m.login_id
+            INNER JOIN roles r
+                ON r.role_id = mr.role_id
+        WHERE m.LOGIN_ID = #{loginId}
+        GROUP BY m.name, m.LOGIN_ID, m."password"
+    </select>
+    
     <select id="existsByLoginId" resultType="boolean">
         SELECT EXISTS(
             SELECT 1 

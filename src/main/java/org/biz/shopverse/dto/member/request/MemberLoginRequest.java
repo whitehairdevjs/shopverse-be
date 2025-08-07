@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Schema(description = "회원 로그인 요청 DTO")
 public class MemberLoginRequest {
     
-    @Schema(description = "로그인 ID (이메일 또는 사용자명)", example = "user@example.com", required = true)
+    @Schema(description = "로그인 ID (이메일 또는 사용자명)", example = "user", required = true)
     @NotBlank(message = "로그인 ID는 필수입니다")
     private String loginId;
     

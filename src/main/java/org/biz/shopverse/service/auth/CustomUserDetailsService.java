@@ -1,10 +1,8 @@
 package org.biz.shopverse.service.auth;
 
-import org.biz.shopverse.dto.auth.MemberWithRoles;
-import org.biz.shopverse.dto.member.response.MemberResponse;
+import org.biz.shopverse.dto.member.MemberWithRoles;
 import org.biz.shopverse.service.member.MemberService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;

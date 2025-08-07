@@ -2,9 +2,14 @@ package org.biz.shopverse.controller.member;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.biz.shopverse.dto.auth.TokenResponse;
 import org.biz.shopverse.dto.common.ApiResponse;
+import org.biz.shopverse.dto.member.MemberWithRoles;
 import org.biz.shopverse.dto.member.request.MemberCreateRequest;
+import org.biz.shopverse.dto.member.request.MemberLoginRequest;
+import org.biz.shopverse.exception.CustomBusinessException;
 import org.biz.shopverse.service.member.MemberService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +25,11 @@ import org.springframework.web.bind.annotation.*;
 public class MemberController {
 
     private final MemberService memberService;
+
+    @PostMapping("/login")
+    public ResponseEntity<TokenResponse> login(@RequestBody MemberLoginRequest memberLoginRequest) {
+        return memberService.login(memberLoginRequest);
+    }
 
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<String>> signup(@RequestBody @Valid MemberCreateRequest memberCreateRequest) {
