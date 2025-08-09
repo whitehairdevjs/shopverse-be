@@ -31,7 +31,7 @@ public class CustomUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("User not found: " + loginId);
         }
         // DB에서 가져온 role 문자열을 GrantedAuthority 리스트로 변환
-        List<GrantedAuthority> auths = resUser.getRoles()
+        List<GrantedAuthority> auths = resUser.getRolesList()
                 .stream()
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
