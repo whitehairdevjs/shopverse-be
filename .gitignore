@@ -34,7 +34,8 @@ out/
 /.nb-gradle/
 
 ### logs ###
-.log
+*.log
+*.sql
 
 ### VS Code ###
 .vscode/
