@@ -27,7 +27,7 @@ public class MemberController {
     private final MemberService memberService;
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@RequestBody MemberLoginRequest memberLoginRequest) {
+    public ResponseEntity<TokenResponse> login(@RequestBody @Valid MemberLoginRequest memberLoginRequest) {
         return memberService.login(memberLoginRequest);
     }
 
