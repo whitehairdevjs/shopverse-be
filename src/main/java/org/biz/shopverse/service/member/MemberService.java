@@ -1,6 +1,9 @@
 package org.biz.shopverse.service.member;
 
-import org.biz.shopverse.dto.auth.TokenResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.biz.shopverse.dto.common.ApiResponse;
 import org.biz.shopverse.dto.member.MemberWithRoles;
 import org.biz.shopverse.dto.member.request.MemberCreateRequest;
 import org.biz.shopverse.dto.member.request.MemberLoginRequest;
@@ -30,6 +33,9 @@ public class MemberService {
     @Value("${jwt.refresh-token-expiration}")
     private long refreshTokenValidityInMs;
 
+    @Value("${app.cookie.secure:false}")
+    private boolean cookieSecure;
+
     public MemberResponse findByLoginId(String loginId) {
         return memberMapper.findByLoginId(loginId);
     }
@@ -54,7 +60,7 @@ public class MemberService {
         }
     }
 
-    public ResponseEntity<TokenResponse> login(MemberLoginRequest memberLoginRequest) {
+    public ResponseEntity<ApiResponse<String>> login(MemberLoginRequest memberLoginRequest, HttpServletResponse response) {
         MemberWithRoles memberWithRoles = findByMemberWithRoles(memberLoginRequest.getLoginId());
 
         if (memberWithRoles == null) {
@@ -70,7 +76,67 @@ public class MemberService {
 
         jwtTokenRedisService.saveRefreshToken(memberWithRoles.getLoginId(), refreshToken, refreshTokenValidityInMs);  // 7일
 
-        return ResponseEntity.ok(new TokenResponse(accessToken, refreshToken));
+        setHttpOnlyCookie(response, "accessToken", accessToken, accessTokenValidityInMs / 1000);
+        setHttpOnlyCookie(response, "refreshToken", refreshToken, refreshTokenValidityInMs / 1000);
+
+        return ResponseEntity.ok(ApiResponse.success("로그인이 완료되었습니다."));
+    }
+
+    public ResponseEntity<ApiResponse<String>> logout(HttpServletResponse response) {
+        deleteCookie(response, "accessToken");
+        deleteCookie(response, "refreshToken");
+
+        return ResponseEntity.ok(ApiResponse.success("로그아웃이 완료되었습니다."));
+    }
+
+    public ResponseEntity<ApiResponse<String>> reissueAccessToken(HttpServletRequest request, HttpServletResponse response) {
+        try {
+            String refreshToken = null;
+            if (request.getCookies() != null) {
+                for (Cookie cookie : request.getCookies()) {
+                    if ("refreshToken".equals(cookie.getName())) {
+                        refreshToken = cookie.getValue();
+                    }
+                }
+            }
+
+            if (refreshToken == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("인증 실패", "리프레시 토큰이 제공되지 않았습니다.", 401));
+            }
+
+            // refreshToken 유효성 검증
+            if (!jwtTokenProvider.isTokenValid(refreshToken)) {
+                throw new CustomBusinessException("유효하지 않은 리프레시 토큰입니다.", HttpStatus.UNAUTHORIZED);
+            }
+
+            String loginId = jwtTokenProvider.getUserId(refreshToken);
+
+            String storedRefreshToken = jwtTokenRedisService.getRefreshToken(loginId);
+            if (storedRefreshToken == null || !refreshToken.equals(storedRefreshToken)) {
+                throw new CustomBusinessException("저장된 리프레시 토큰과 일치하지 않습니다.", HttpStatus.UNAUTHORIZED);
+            }
+
+            MemberWithRoles memberWithRoles = findByMemberWithRoles(loginId);
+            if (memberWithRoles == null) {
+                throw new CustomBusinessException("사용자를 찾을 수 없습니다.", HttpStatus.UNAUTHORIZED);
+            }
+
+            String newAccessToken = jwtTokenProvider.generateAccessToken(
+                    memberWithRoles.getLoginId(),
+                    memberWithRoles.getRolesList(),
+                    accessTokenValidityInMs
+            );
+
+            setHttpOnlyCookie(response, "accessToken", newAccessToken, accessTokenValidityInMs / 1000);
+
+            return ResponseEntity.ok(ApiResponse.success("액세스 토큰이 갱신되었습니다."));
+        } catch (CustomBusinessException e) {
+            return ResponseEntity.status(e.getHttpStatus())
+                    .body(ApiResponse.error("인증 실패", e.getMessage(), e.getHttpStatus().value()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("인증 실패", "토큰 처리 중 오류가 발생했습니다.", 401));
+        }
     }
 
     public boolean signup(MemberCreateRequest memberCreateRequest) {
@@ -86,5 +152,73 @@ public class MemberService {
         memberCreateRequest.setPassword(encodedPassword);
 
         return createMember(memberCreateRequest) > 0;
+    }
+
+    public ResponseEntity<ApiResponse<MemberResponse>> getProfile(HttpServletRequest request) {
+        try {
+            String accessToken = null;
+            if (request.getCookies() != null) {
+                for (Cookie cookie : request.getCookies()) {
+                    if ("accessToken".equals(cookie.getName())) {
+                        accessToken = cookie.getValue();
+                        break;
+                    }
+                }
+            }
+
+            if (accessToken == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("인증 실패", "액세스 토큰이 제공되지 않았습니다.", 401));
+            }
+
+            if (!jwtTokenProvider.isTokenValid(accessToken)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("인증 실패", "유효하지 않은 토큰입니다.", 401));
+            }
+
+            String loginId = jwtTokenProvider.getUserId(accessToken);
+            String role = jwtTokenProvider.getUserRole(accessToken);
+            
+            MemberResponse memberResponse = findByLoginId(loginId);
+            if (memberResponse == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("사용자 없음", "사용자를 찾을 수 없습니다.", 404));
+            }
+
+            memberResponse.setRole(role);
+
+            return ResponseEntity.ok(ApiResponse.success(memberResponse, "프로필 조회 성공"));
+            
+        } catch (CustomBusinessException e) {
+            return ResponseEntity.status(e.getHttpStatus())
+                    .body(ApiResponse.error("프로필 조회 실패", e.getMessage(), e.getHttpStatus().value()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("서버 오류", "프로필 조회 중 오류가 발생했습니다.", 500));
+        }
+    }
+
+    /**
+     * HttpOnly 쿠키 설정
+     */
+    private void setHttpOnlyCookie(HttpServletResponse response, String name, String value, long maxAge) {
+        Cookie cookie = new Cookie(name, value);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(cookieSecure); // 설정 파일에서 읽어온 값 사용
+        cookie.setPath("/");
+        cookie.setMaxAge((int) maxAge);
+        response.addCookie(cookie);
+    }
+
+    /**
+     * 쿠키 삭제
+     */
+    private void deleteCookie(HttpServletResponse response, String name) {
+        Cookie cookie = new Cookie(name, null);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(cookieSecure); // 설정 파일에서 읽어온 값 사용
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
     }
 } 

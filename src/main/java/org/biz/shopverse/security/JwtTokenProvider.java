@@ -69,7 +69,7 @@ public class JwtTokenProvider {
             parseClaims(token);
             return true;
         } catch (ExpiredJwtException e) {
-            throw new JwtTokenExpiredException("Access Token has expired");
+            throw new JwtTokenExpiredException("Access or Refresh Token has expired");
         } catch (JwtException | IllegalArgumentException e) {
             throw new JwtInvalidException("JWT is invalid");
         }

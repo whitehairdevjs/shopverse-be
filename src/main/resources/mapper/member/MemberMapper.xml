@@ -2,47 +2,41 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="org.biz.shopverse.mapper.member.MemberMapper">
-    <select id="findByLoginId" resultType="org.biz.shopverse.domain.member.Member">
+    <select id="findByLoginId" resultType="org.biz.shopverse.dto.member.response.MemberResponse">
         SELECT 
             m.id,
-            m.login_id,
-            m.password,
+            m.login_id AS loginId,
             m.name,
             m.nickname,
             m.phone,
             m.email,
             m.gender,
-            m.birth_date,
-            m.is_social,
-            m.social_provider,
-            m.marketing_yn,
-            m.sms_yn,
-            m.email_yn,
+            m.birth_date AS birthDate,
+            m.is_social AS isSocial,
+            m.social_provider AS socialProvider,
+            m.marketing_yn AS marketingYn,
+            m.sms_yn AS smsYn,
+            m.email_yn AS emailYn,
             m.point,
             m.status,
-            m.last_login_at,
-            m.created_at,
-            m.updated_at
+            m.last_login_at AS lastLoginAt,
+            m.created_at AS createdAt,
+            m.updated_at AS updatedAt
         FROM members m
-        WHERE login_id = #{loginId}
+        WHERE m.login_id = #{loginId}
     </select>
 
     <select id="findByMemberWithRoles" resultType="org.biz.shopverse.dto.member.MemberWithRoles">
         SELECT
-            m.name
-            , m.login_id
-            , m."password"
-            , TO_JSON(ARRAY_AGG(r.role_code)) AS roles
-            , TO_JSON(ARRAY_AGG(r.role_code)) AS rolesString
-            , STRING_AGG(r.role_code, ',') AS str_agg
-            , ARRAY_AGG(r.role_code) AS arr_agg
+            m.name,
+            m.login_id AS loginId,
+            m.password,
+            TO_JSON(ARRAY_AGG(r.role_code)) AS roles
         FROM members m
-            INNER JOIN member_roles mr
-                ON mr.login_id = m.login_id
-            INNER JOIN roles r
-                ON r.role_id = mr.role_id
-        WHERE m.LOGIN_ID = #{loginId}
-        GROUP BY m.name, m.LOGIN_ID, m."password"
+            INNER JOIN member_roles mr ON mr.login_id = m.login_id
+            INNER JOIN roles r ON r.role_id = mr.role_id
+        WHERE m.login_id = #{loginId}
+        GROUP BY m.name, m.login_id, m.password
     </select>
     
     <select id="existsByLoginId" resultType="boolean">
