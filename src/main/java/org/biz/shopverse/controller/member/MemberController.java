@@ -1,24 +1,18 @@
 package org.biz.shopverse.controller.member;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.biz.shopverse.dto.auth.TokenResponse;
 import org.biz.shopverse.dto.common.ApiResponse;
-import org.biz.shopverse.dto.member.MemberWithRoles;
 import org.biz.shopverse.dto.member.request.MemberCreateRequest;
 import org.biz.shopverse.dto.member.request.MemberLoginRequest;
-import org.biz.shopverse.exception.CustomBusinessException;
+import org.biz.shopverse.dto.member.response.MemberResponse;
 import org.biz.shopverse.service.member.MemberService;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/**
- *
- *  회원 가입, 조회, 수정, 탈퇴
- *
- */
 @RestController
 @RequestMapping("/member")
 @RequiredArgsConstructor
@@ -27,8 +21,18 @@ public class MemberController {
     private final MemberService memberService;
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@RequestBody @Valid MemberLoginRequest memberLoginRequest) {
-        return memberService.login(memberLoginRequest);
+    public ResponseEntity<ApiResponse<String>> login(@RequestBody @Valid MemberLoginRequest memberLoginRequest, HttpServletResponse response) {
+        return memberService.login(memberLoginRequest, response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<String>> logout(HttpServletResponse response) {
+        return memberService.logout(response);
+    }
+
+    @PostMapping("/reissue-access-token")
+    public ResponseEntity<ApiResponse<String>> reissueAccessToken(HttpServletRequest request, HttpServletResponse response) {
+        return memberService.reissueAccessToken(request, response);
     }
 
     @PostMapping("/signup")
@@ -48,6 +52,11 @@ public class MemberController {
     @GetMapping("/check-email")
     public ResponseEntity<ApiResponse<String>> checkEmailDuplication(@RequestParam String email) {
         return ResponseEntity.ok(ApiResponse.success(String.valueOf(memberService.existsByEmail(email))));
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<ApiResponse<MemberResponse>> getProfile(HttpServletRequest request) {
+        return memberService.getProfile(request);
     }
 
 }

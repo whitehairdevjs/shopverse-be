@@ -59,6 +59,9 @@ public class MemberResponse {
     @Schema(description = "회원 상태", example = "ACTIVE")
     private String status;
     
+    @Schema(description = "회원 역할", example = "USER")
+    private String role;
+    
     @Schema(description = "마지막 로그인 시각", example = "2024-01-01T10:00:00")
     private LocalDateTime lastLoginAt;
     
