@@ -65,7 +65,7 @@ public class MemberService {
             throw new CustomBusinessException("잘못된 사용자 정보를 입력 하셨습니다.");
         }
 
-        String accessToken = jwtTokenProvider.generateAccessToken(memberWithRoles.getLoginId(), memberWithRoles.getRoles(), accessTokenValidityInMs);
+        String accessToken = jwtTokenProvider.generateAccessToken(memberWithRoles.getLoginId(), memberWithRoles.getRolesList(), accessTokenValidityInMs);
         String refreshToken = jwtTokenProvider.generateRefreshToken(memberWithRoles.getLoginId(), refreshTokenValidityInMs);
 
         jwtTokenRedisService.saveRefreshToken(memberWithRoles.getLoginId(), refreshToken, refreshTokenValidityInMs);  // 7일

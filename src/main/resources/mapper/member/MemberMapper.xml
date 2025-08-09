@@ -27,19 +27,15 @@
         WHERE login_id = #{loginId}
     </select>
 
-    <resultMap id="memberWithRolesResultMap" type="org.biz.shopverse.dto.member.MemberWithRoles">
-        <result property="name" column="name"/>
-        <result property="loginId" column="login_id"/>
-        <result property="password" column="password"/>
-        <result property="roles" column="roles" typeHandler="org.apache.ibatis.type.ArrayTypeHandler"/>
-    </resultMap>
-
-    <select id="findByMemberWithRoles" resultMap="memberWithRolesResultMap">
+    <select id="findByMemberWithRoles" resultType="org.biz.shopverse.dto.member.MemberWithRoles">
         SELECT
             m.name
             , m.login_id
             , m."password"
-            , ARRAY_AGG(r.role_code) as roles
+            , TO_JSON(ARRAY_AGG(r.role_code)) AS roles
+            , TO_JSON(ARRAY_AGG(r.role_code)) AS rolesString
+            , STRING_AGG(r.role_code, ',') AS str_agg
+            , ARRAY_AGG(r.role_code) AS arr_agg
         FROM members m
             INNER JOIN member_roles mr
                 ON mr.login_id = m.login_id
