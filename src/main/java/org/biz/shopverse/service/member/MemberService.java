@@ -76,14 +76,12 @@ public class MemberService {
 
         jwtTokenRedisService.saveRefreshToken(memberWithRoles.getLoginId(), refreshToken, refreshTokenValidityInMs);  // 7일
 
-        setHttpOnlyCookie(response, "accessToken", accessToken, accessTokenValidityInMs / 1000);
         setHttpOnlyCookie(response, "refreshToken", refreshToken, refreshTokenValidityInMs / 1000);
 
-        return ResponseEntity.ok(ApiResponse.success("로그인이 완료되었습니다."));
+        return ResponseEntity.ok(ApiResponse.success("로그인이 완료되었습니다.", accessToken));
     }
 
     public ResponseEntity<ApiResponse<String>> logout(HttpServletResponse response) {
-        deleteCookie(response, "accessToken");
         deleteCookie(response, "refreshToken");
 
         return ResponseEntity.ok(ApiResponse.success("로그아웃이 완료되었습니다."));
@@ -104,7 +102,6 @@ public class MemberService {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("인증 실패", "리프레시 토큰이 제공되지 않았습니다.", 401));
             }
 
-            // refreshToken 유효성 검증
             if (!jwtTokenProvider.isTokenValid(refreshToken)) {
                 throw new CustomBusinessException("유효하지 않은 리프레시 토큰입니다.", HttpStatus.UNAUTHORIZED);
             }
@@ -127,9 +124,7 @@ public class MemberService {
                     accessTokenValidityInMs
             );
 
-            setHttpOnlyCookie(response, "accessToken", newAccessToken, accessTokenValidityInMs / 1000);
-
-            return ResponseEntity.ok(ApiResponse.success("액세스 토큰이 갱신되었습니다."));
+            return ResponseEntity.ok(ApiResponse.success("액세스 토큰이 갱신되었습니다.", newAccessToken));
         } catch (CustomBusinessException e) {
             return ResponseEntity.status(e.getHttpStatus())
                     .body(ApiResponse.error("인증 실패", e.getMessage(), e.getHttpStatus().value()));
@@ -157,15 +152,12 @@ public class MemberService {
     public ResponseEntity<ApiResponse<MemberResponse>> getProfile(HttpServletRequest request) {
         try {
             String accessToken = null;
-            if (request.getCookies() != null) {
-                for (Cookie cookie : request.getCookies()) {
-                    if ("accessToken".equals(cookie.getName())) {
-                        accessToken = cookie.getValue();
-                        break;
-                    }
-                }
+            
+            String bearer = request.getHeader("Authorization");
+            if (bearer != null && bearer.startsWith("Bearer ")) {
+                accessToken = bearer.substring(7);
             }
-
+        
             if (accessToken == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(ApiResponse.error("인증 실패", "액세스 토큰이 제공되지 않았습니다.", 401));
@@ -198,9 +190,6 @@ public class MemberService {
         }
     }
 
-    /**
-     * HttpOnly 쿠키 설정
-     */
     private void setHttpOnlyCookie(HttpServletResponse response, String name, String value, long maxAge) {
         Cookie cookie = new Cookie(name, value);
         cookie.setHttpOnly(true);
@@ -210,9 +199,6 @@ public class MemberService {
         response.addCookie(cookie);
     }
 
-    /**
-     * 쿠키 삭제
-     */
     private void deleteCookie(HttpServletResponse response, String name) {
         Cookie cookie = new Cookie(name, null);
         cookie.setHttpOnly(true);
