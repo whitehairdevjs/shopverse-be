@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.biz.shopverse.dto.auth.TokenResponse;
 import org.biz.shopverse.dto.common.ApiResponse;
 import org.biz.shopverse.dto.member.request.MemberCreateRequest;
 import org.biz.shopverse.dto.member.request.MemberLoginRequest;
@@ -21,7 +22,7 @@ public class MemberController {
     private final MemberService memberService;
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<String>> login(@RequestBody @Valid MemberLoginRequest memberLoginRequest, HttpServletResponse response) {
+    public ResponseEntity<ApiResponse<TokenResponse>> login(@RequestBody @Valid MemberLoginRequest memberLoginRequest, HttpServletResponse response) {
         return memberService.login(memberLoginRequest, response);
     }
 
@@ -31,7 +32,7 @@ public class MemberController {
     }
 
     @PostMapping("/reissue-access-token")
-    public ResponseEntity<ApiResponse<String>> reissueAccessToken(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<ApiResponse<TokenResponse>> reissueAccessToken(HttpServletRequest request, HttpServletResponse response) {
         return memberService.reissueAccessToken(request, response);
     }
 

@@ -3,6 +3,9 @@ package org.biz.shopverse.service.member;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.biz.shopverse.domain.member.Member;
+import org.biz.shopverse.dto.auth.TokenResponse;
 import org.biz.shopverse.dto.common.ApiResponse;
 import org.biz.shopverse.dto.member.MemberWithRoles;
 import org.biz.shopverse.dto.member.request.MemberCreateRequest;
@@ -19,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MemberService {
@@ -60,7 +64,7 @@ public class MemberService {
         }
     }
 
-    public ResponseEntity<ApiResponse<String>> login(MemberLoginRequest memberLoginRequest, HttpServletResponse response) {
+    public ResponseEntity<ApiResponse<TokenResponse>> login(MemberLoginRequest memberLoginRequest, HttpServletResponse response) {
         MemberWithRoles memberWithRoles = findByMemberWithRoles(memberLoginRequest.getLoginId());
 
         if (memberWithRoles == null) {
@@ -78,7 +82,17 @@ public class MemberService {
 
         setHttpOnlyCookie(response, "refreshToken", refreshToken, refreshTokenValidityInMs / 1000);
 
-        return ResponseEntity.ok(ApiResponse.success("로그인이 완료되었습니다.", accessToken));
+        Member member = Member.builder()
+                .loginId(memberWithRoles.getLoginId())
+                .name(memberWithRoles.getName())
+                .build();
+
+        TokenResponse tokenResponse = TokenResponse.builder()
+                .member(member)
+                .accessToken(accessToken)
+                .build();
+
+        return ResponseEntity.ok(ApiResponse.success(tokenResponse, "로그인이 완료되었습니다."));
     }
 
     public ResponseEntity<ApiResponse<String>> logout(HttpServletResponse response) {
@@ -87,7 +101,7 @@ public class MemberService {
         return ResponseEntity.ok(ApiResponse.success("로그아웃이 완료되었습니다."));
     }
 
-    public ResponseEntity<ApiResponse<String>> reissueAccessToken(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<ApiResponse<TokenResponse>> reissueAccessToken(HttpServletRequest request, HttpServletResponse response) {
         try {
             String refreshToken = null;
             if (request.getCookies() != null) {
@@ -124,7 +138,11 @@ public class MemberService {
                     accessTokenValidityInMs
             );
 
-            return ResponseEntity.ok(ApiResponse.success("액세스 토큰이 갱신되었습니다.", newAccessToken));
+            TokenResponse tokenResponse = TokenResponse.builder()
+                    .accessToken(newAccessToken)
+                    .build();
+
+            return ResponseEntity.ok(ApiResponse.success(tokenResponse, "액세스 토큰이 갱신되었습니다."));
         } catch (CustomBusinessException e) {
             return ResponseEntity.status(e.getHttpStatus())
                     .body(ApiResponse.error("인증 실패", e.getMessage(), e.getHttpStatus().value()));
@@ -180,11 +198,11 @@ public class MemberService {
             memberResponse.setRole(role);
 
             return ResponseEntity.ok(ApiResponse.success(memberResponse, "프로필 조회 성공"));
-            
         } catch (CustomBusinessException e) {
             return ResponseEntity.status(e.getHttpStatus())
                     .body(ApiResponse.error("프로필 조회 실패", e.getMessage(), e.getHttpStatus().value()));
         } catch (Exception e) {
+            log.error(e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("서버 오류", "프로필 조회 중 오류가 발생했습니다.", 500));
         }

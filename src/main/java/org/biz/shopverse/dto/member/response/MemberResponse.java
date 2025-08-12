@@ -17,7 +17,7 @@ public class MemberResponse {
     @Schema(description = "회원 ID", example = "1")
     private Long id;
     
-    @Schema(description = "로그인 ID", example = "user@example.com")
+    @Schema(description = "로그인 ID", example = "user")
     private String loginId;
     
     @Schema(description = "이름", example = "홍길동")
@@ -63,11 +63,11 @@ public class MemberResponse {
     private String role;
     
     @Schema(description = "마지막 로그인 시각", example = "2024-01-01T10:00:00")
-    private LocalDateTime lastLoginAt;
+    private String lastLoginAt;
     
     @Schema(description = "생성 시각", example = "2024-01-01T10:00:00")
-    private LocalDateTime createdAt;
+    private String createdAt;
     
     @Schema(description = "수정 시각", example = "2024-01-01T10:00:00")
-    private LocalDateTime updatedAt;
+    private String updatedAt;
 } 
