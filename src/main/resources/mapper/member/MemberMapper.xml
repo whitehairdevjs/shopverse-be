@@ -24,6 +24,7 @@
             m.updated_at
         FROM members m
         WHERE m.login_id = #{loginId}
+        AND m.status = 'ACTIVE'
     </select>
 
     <select id="findByMemberWithRoles" resultType="org.biz.shopverse.dto.member.MemberWithRoles">
