@@ -1,6 +1,8 @@
 package org.biz.shopverse.service.member;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.biz.shopverse.domain.member.Member;
 import org.biz.shopverse.dto.auth.TokenResponse;
 import org.biz.shopverse.dto.common.ApiResponse;
 import org.biz.shopverse.dto.member.MemberWithRoles;
@@ -22,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -41,6 +44,9 @@ class MemberServiceLoginTest {
 
     @Mock
     private JwtTokenRedisService jwtTokenRedisService;
+
+    @Mock
+    private HttpServletRequest request;
 
     @Mock
     private HttpServletResponse response;
@@ -65,6 +71,7 @@ class MemberServiceLoginTest {
 
         memberWithRoles = new MemberWithRoles();
         memberWithRoles.setLoginId("testuser");
+        memberWithRoles.setName("홍길동");
         memberWithRoles.setPassword("encodedPassword");
         memberWithRoles.setRoles("[\"ROLE_USER\"]"); // JSON 문자열 형태로 설정
     }
@@ -79,7 +86,7 @@ class MemberServiceLoginTest {
         when(jwtTokenProvider.generateRefreshToken(anyString(), anyLong())).thenReturn("refresh-token");
 
         // When
-        ResponseEntity<ApiResponse<String>> responseEntity = memberService.login(loginRequest, response);
+        ResponseEntity<ApiResponse<TokenResponse>> responseEntity = memberService.login(loginRequest, response);
 
         // Then
         assertNotNull(responseEntity);
@@ -154,7 +161,7 @@ class MemberServiceLoginTest {
         loginRequest.setLoginId("adminuser");
 
         // When
-        ResponseEntity<ApiResponse<String>> responseEntity = memberService.login(loginRequest, response);
+        ResponseEntity<ApiResponse<TokenResponse>> responseEntity = memberService.login(loginRequest, response);
 
         // Then
         assertNotNull(responseEntity);
@@ -184,7 +191,7 @@ class MemberServiceLoginTest {
         loginRequest.setLoginId("noroleuser");
 
         // When
-        ResponseEntity<ApiResponse<String>> responseEntity = memberService.login(loginRequest, response);
+        ResponseEntity<ApiResponse<TokenResponse>> responseEntity = memberService.login(loginRequest, response);
 
         // Then
         assertNotNull(responseEntity);
@@ -228,10 +235,10 @@ class MemberServiceLoginTest {
         when(jwtTokenProvider.getUserId(validRefreshToken)).thenReturn(loginId);
         when(jwtTokenRedisService.getRefreshToken(loginId)).thenReturn(validRefreshToken);
         when(memberMapper.findByMemberWithRoles(loginId)).thenReturn(memberWithRoles);
-        when(jwtTokenProvider.generateAccessToken(anyString(), any(), anyLong())).thenReturn(newAccessToken);
+        when(jwtTokenProvider.generateAccessToken(anyString(), (List<String>) any(), anyLong())).thenReturn(newAccessToken);
 
         // When
-        ResponseEntity<ApiResponse<String>> responseEntity = memberService.reissueAccessToken(null, response);
+        ResponseEntity<ApiResponse<TokenResponse>> responseEntity = memberService.reissueAccessToken(request, response);
 
         // Then
         assertNotNull(responseEntity);
@@ -257,7 +264,7 @@ class MemberServiceLoginTest {
 
         // When & Then
         CustomBusinessException exception = assertThrows(CustomBusinessException.class, () -> {
-            memberService.reissueAccessToken(null, response);
+            memberService.reissueAccessToken(request, response);
         });
 
         assertEquals("유효하지 않은 리프레시 토큰입니다.", exception.getMessage());
@@ -267,7 +274,7 @@ class MemberServiceLoginTest {
         verify(jwtTokenProvider, never()).getUserId(anyString());
         verify(jwtTokenRedisService, never()).getRefreshToken(anyString());
         verify(memberMapper, never()).findByMemberWithRoles(anyString());
-        verify(jwtTokenProvider, never()).generateAccessToken(anyString(), any(), anyLong());
+        verify(jwtTokenProvider, never()).generateAccessToken(anyString(), (List<String>) any(), anyLong());
     }
 
     @Test
@@ -284,7 +291,7 @@ class MemberServiceLoginTest {
 
         // When & Then
         CustomBusinessException exception = assertThrows(CustomBusinessException.class, () -> {
-            memberService.reissueAccessToken(null, response);
+            memberService.reissueAccessToken(request, response);
         });
 
         assertEquals("저장된 리프레시 토큰과 일치하지 않습니다.", exception.getMessage());
@@ -294,7 +301,7 @@ class MemberServiceLoginTest {
         verify(jwtTokenProvider, times(1)).getUserId(validRefreshToken);
         verify(jwtTokenRedisService, times(1)).getRefreshToken(loginId);
         verify(memberMapper, never()).findByMemberWithRoles(anyString());
-        verify(jwtTokenProvider, never()).generateAccessToken(anyString(), any(), anyLong());
+        verify(jwtTokenProvider, never()).generateAccessToken(anyString(), (List<String>) any(), anyLong());
     }
 
     @Test
@@ -311,7 +318,7 @@ class MemberServiceLoginTest {
 
         // When & Then
         CustomBusinessException exception = assertThrows(CustomBusinessException.class, () -> {
-            memberService.reissueAccessToken(null, response);
+            memberService.reissueAccessToken(request, response);
         });
 
         assertEquals("사용자를 찾을 수 없습니다.", exception.getMessage());
@@ -321,6 +328,6 @@ class MemberServiceLoginTest {
         verify(jwtTokenProvider, times(1)).getUserId(validRefreshToken);
         verify(jwtTokenRedisService, times(1)).getRefreshToken(loginId);
         verify(memberMapper, times(1)).findByMemberWithRoles(loginId);
-        verify(jwtTokenProvider, never()).generateAccessToken(anyString(), any(), anyLong());
+        verify(jwtTokenProvider, never()).generateAccessToken(anyString(), (List<String>) any(), anyLong());
     }
 }
