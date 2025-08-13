@@ -8,6 +8,7 @@ import org.biz.shopverse.dto.auth.TokenResponse;
 import org.biz.shopverse.dto.common.ApiResponse;
 import org.biz.shopverse.dto.member.request.MemberCreateRequest;
 import org.biz.shopverse.dto.member.request.MemberLoginRequest;
+import org.biz.shopverse.dto.member.request.MemberUpdateRequest;
 import org.biz.shopverse.dto.member.response.MemberResponse;
 import org.biz.shopverse.service.member.MemberService;
 import org.springframework.http.HttpStatus;
@@ -59,5 +60,9 @@ public class MemberController {
     public ResponseEntity<ApiResponse<MemberResponse>> getProfile(HttpServletRequest request) {
         return memberService.getProfile(request);
     }
-
+    
+    @PutMapping("/profile")
+    public ResponseEntity<ApiResponse<MemberResponse>> updateProfile(HttpServletRequest request, @RequestBody @Valid MemberUpdateRequest memberUpdateRequest) {
+        return memberService.updateProfile(request, memberUpdateRequest);
+    }
 }

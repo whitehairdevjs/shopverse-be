@@ -10,6 +10,7 @@ import org.biz.shopverse.dto.common.ApiResponse;
 import org.biz.shopverse.dto.member.MemberWithRoles;
 import org.biz.shopverse.dto.member.request.MemberCreateRequest;
 import org.biz.shopverse.dto.member.request.MemberLoginRequest;
+import org.biz.shopverse.dto.member.request.MemberUpdateRequest;
 import org.biz.shopverse.dto.member.response.MemberResponse;
 import org.biz.shopverse.exception.CustomBusinessException;
 import org.biz.shopverse.mapper.member.MemberMapper;
@@ -205,6 +206,68 @@ public class MemberService {
             log.error(e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("서버 오류", "프로필 조회 중 오류가 발생했습니다.", 500));
+        }
+    }
+    
+    public ResponseEntity<ApiResponse<MemberResponse>> updateProfile(HttpServletRequest request, MemberUpdateRequest memberUpdateRequest) {
+        try {
+            String accessToken = null;
+            
+            String bearer = request.getHeader("Authorization");
+            if (bearer != null && bearer.startsWith("Bearer ")) {
+                accessToken = bearer.substring(7);
+            }
+        
+            if (accessToken == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("인증 실패", "액세스 토큰이 제공되지 않았습니다.", 401));
+            }
+
+            if (!jwtTokenProvider.isTokenValid(accessToken)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("인증 실패", "유효하지 않은 토큰입니다.", 401));
+            }
+
+            String loginId = jwtTokenProvider.getUserId(accessToken);
+            String role = jwtTokenProvider.getUserRole(accessToken);
+            
+            MemberResponse currentMember = findByLoginId(loginId);
+            if (currentMember == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("사용자 없음", "사용자를 찾을 수 없습니다.", 404));
+            }
+            
+            if (!currentMember.getEmail().equals(memberUpdateRequest.getEmail()) && 
+                existsByEmail(memberUpdateRequest.getEmail())) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(ApiResponse.error("이메일 중복", "이미 사용중인 이메일입니다.", 409));
+            }
+            
+            int updateResult = memberMapper.updateMember(loginId, memberUpdateRequest);
+            if (updateResult <= 0) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(ApiResponse.error("수정 실패", "개인정보 수정에 실패했습니다.", 500));
+            }
+            
+            currentMember.setName(memberUpdateRequest.getName());
+            currentMember.setNickname(memberUpdateRequest.getNickname());
+            currentMember.setPhone(memberUpdateRequest.getPhone());
+            currentMember.setEmail(memberUpdateRequest.getEmail());
+            currentMember.setGender(memberUpdateRequest.getGender());
+            currentMember.setBirthDate(memberUpdateRequest.getBirthDate());
+            currentMember.setMarketingYn(memberUpdateRequest.getMarketingYn());
+            currentMember.setSmsYn(memberUpdateRequest.getSmsYn());
+            currentMember.setEmailYn(memberUpdateRequest.getEmailYn());
+            currentMember.setRole(role);
+            
+            return ResponseEntity.ok(ApiResponse.success(currentMember, "개인정보가 성공적으로 수정되었습니다."));
+        } catch (CustomBusinessException e) {
+            return ResponseEntity.status(e.getHttpStatus())
+                    .body(ApiResponse.error("개인정보 수정 실패", e.getMessage(), e.getHttpStatus().value()));
+        } catch (Exception e) {
+            log.error("개인정보 수정 중 오류 발생: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("서버 오류", "개인정보 수정 중 오류가 발생했습니다.", 500));
         }
     }
 
