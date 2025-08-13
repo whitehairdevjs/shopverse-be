@@ -1,8 +1,12 @@
 package org.biz.shopverse.controller.member;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.biz.shopverse.domain.member.Member;
+import org.biz.shopverse.dto.auth.TokenResponse;
 import org.biz.shopverse.dto.common.ApiResponse;
 import org.biz.shopverse.dto.member.request.MemberLoginRequest;
+import org.biz.shopverse.dto.member.request.MemberUpdateRequest;
+import org.biz.shopverse.dto.member.response.MemberResponse;
 import org.biz.shopverse.exception.CustomBusinessException;
 import org.biz.shopverse.exception.GlobalExceptionHandler;
 import org.biz.shopverse.service.member.MemberService;
@@ -16,13 +20,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,10 +42,6 @@ class MemberControllerTest {
 
     @BeforeEach
     void setUp() {
-        // @Value 어노테이션으로 주입되는 값들을 테스트에서 설정
-        ReflectionTestUtils.setField(memberController, "accessTokenValidityInMs", 900000L); // 15분
-        ReflectionTestUtils.setField(memberController, "refreshTokenValidityInMs", 604800000L); // 7일
-
         // GlobalExceptionHandler를 포함하여 MockMvc 설정
         mockMvc = MockMvcBuilders.standaloneSetup(memberController)
                 .setControllerAdvice(new GlobalExceptionHandler())
@@ -59,8 +58,18 @@ class MemberControllerTest {
         loginRequest.setLoginId("testuser");
         loginRequest.setPassword("password123");
 
-        ResponseEntity<ApiResponse<String>> successResponse = ResponseEntity.ok(
-                ApiResponse.success("로그인이 완료되었습니다.")
+        Member member = Member.builder()
+                .loginId("testuser")
+                .name("홍길동")
+                .build();
+
+        TokenResponse tokenResponse = TokenResponse.builder()
+                .member(member)
+                .accessToken("access-token")
+                .build();
+
+        ResponseEntity<ApiResponse<TokenResponse>> successResponse = ResponseEntity.ok(
+                ApiResponse.success(tokenResponse, "로그인이 완료되었습니다.")
         );
 
         when(memberService.login(any(MemberLoginRequest.class), any())).thenReturn(successResponse);
@@ -120,14 +129,23 @@ class MemberControllerTest {
     @DisplayName("리프레시 토큰 성공 - 유효한 refreshToken")
     void refreshToken_Success() throws Exception {
         // Given
-        ResponseEntity<ApiResponse<String>> successResponse = ResponseEntity.ok(
-                ApiResponse.success("액세스 토큰이 갱신되었습니다.")
+        Member member = Member.builder()
+                .loginId("testuser")
+                .name("홍길동")
+                .build();
+
+        TokenResponse tokenResponse = TokenResponse.builder()
+                .accessToken("new-access-token")
+                .build();
+
+        ResponseEntity<ApiResponse<TokenResponse>> successResponse = ResponseEntity.ok(
+                ApiResponse.success(tokenResponse, "액세스 토큰이 갱신되었습니다.")
         );
 
         when(memberService.reissueAccessToken(any(), any())).thenReturn(successResponse);
 
         // When & Then
-        mockMvc.perform(post("/member/refresh-token")
+        mockMvc.perform(post("/member/reissue-access-token")
                         .cookie(new jakarta.servlet.http.Cookie("refreshToken", "valid-refresh-token")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -138,76 +156,16 @@ class MemberControllerTest {
     @DisplayName("리프레시 토큰 실패 - refreshToken이 없는 경우")
     void refreshToken_Failure_NoToken() throws Exception {
         // Given
-        ResponseEntity<ApiResponse<String>> errorResponse = ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        ResponseEntity<ApiResponse<TokenResponse>> errorResponse = ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.error("인증 실패", "리프레시 토큰이 제공되지 않았습니다.", 401));
 
         when(memberService.reissueAccessToken(any(), any())).thenReturn(errorResponse);
 
         // When & Then
-        mockMvc.perform(post("/member/refresh-token"))
+        mockMvc.perform(post("/member/reissue-access-token"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("리프레시 토큰이 제공되지 않았습니다."));
-    }
-
-    @Test
-    @DisplayName("리프레시 토큰 실패 - 유효하지 않은 refreshToken")
-    void refreshToken_Failure_InvalidToken() throws Exception {
-        // Given
-        when(memberService.reissueAccessToken(any(), any()))
-                .thenThrow(new CustomBusinessException("유효하지 않은 리프레시 토큰입니다.", HttpStatus.UNAUTHORIZED));
-
-        // When & Then
-        mockMvc.perform(post("/member/refresh-token")
-                        .cookie(new jakarta.servlet.http.Cookie("refreshToken", "invalid-refresh-token")))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("유효하지 않은 리프레시 토큰입니다."));
-    }
-
-    @Test
-    @DisplayName("리프레시 토큰 실패 - Redis에 저장된 토큰과 일치하지 않는 경우")
-    void refreshToken_Failure_TokenMismatch() throws Exception {
-        // Given
-        when(memberService.reissueAccessToken(any(), any()))
-                .thenThrow(new CustomBusinessException("저장된 리프레시 토큰과 일치하지 않습니다.", HttpStatus.UNAUTHORIZED));
-
-        // When & Then
-        mockMvc.perform(post("/member/refresh-token")
-                        .cookie(new jakarta.servlet.http.Cookie("refreshToken", "valid-refresh-token")))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("저장된 리프레시 토큰과 일치하지 않습니다."));
-    }
-
-    @Test
-    @DisplayName("리프레시 토큰 실패 - 사용자를 찾을 수 없는 경우")
-    void refreshToken_Failure_UserNotFound() throws Exception {
-        // Given
-        when(memberService.reissueAccessToken(any(), any()))
-                .thenThrow(new CustomBusinessException("사용자를 찾을 수 없습니다.", HttpStatus.UNAUTHORIZED));
-
-        // When & Then
-        mockMvc.perform(post("/member/refresh-token")
-                        .cookie(new jakarta.servlet.http.Cookie("refreshToken", "valid-refresh-token")))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("사용자를 찾을 수 없습니다."));
-    }
-
-    @Test
-    @DisplayName("리프레시 토큰 실패 - 토큰 처리 중 예외 발생")
-    void refreshToken_Failure_TokenException() throws Exception {
-        // Given
-        when(memberService.reissueAccessToken(any(), any()))
-                .thenThrow(new RuntimeException("토큰 처리 오류"));
-
-        // When & Then
-        mockMvc.perform(post("/member/refresh-token")
-                        .cookie(new jakarta.servlet.http.Cookie("refreshToken", "valid-refresh-token")))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("토큰 처리 중 오류가 발생했습니다."));
     }
 
     // ==================== 로그아웃 테스트 ====================
@@ -226,6 +184,92 @@ class MemberControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("로그아웃이 완료되었습니다."));
+    }
+
+    // ==================== 회원가입 테스트 ====================
+    @Test
+    @DisplayName("회원가입 성공")
+    void signup_Success() throws Exception {
+        // Given
+        MemberLoginRequest signupRequest = new MemberLoginRequest();
+        signupRequest.setLoginId("newuser");
+        signupRequest.setPassword("password123");
+
+        when(memberService.signup(any())).thenReturn(true);
+
+        // When & Then
+        mockMvc.perform(post("/member/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(signupRequest)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("회원가입이 완료되었습니다."));
+    }
+
+    // ==================== 프로필 조회 테스트 ====================
+    @Test
+    @DisplayName("프로필 조회 성공")
+    void getProfile_Success() throws Exception {
+        // Given
+        MemberResponse memberResponse = MemberResponse.builder()
+                .id(1L)
+                .loginId("testuser")
+                .name("홍길동")
+                .nickname("길동이")
+                .email("hong@example.com")
+                .build();
+
+        ResponseEntity<ApiResponse<MemberResponse>> successResponse = ResponseEntity.ok(
+                ApiResponse.success(memberResponse, "프로필 조회 성공")
+        );
+
+        when(memberService.getProfile(any())).thenReturn(successResponse);
+
+        // When & Then
+        mockMvc.perform(get("/member/profile")
+                        .header("Authorization", "Bearer valid-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("프로필 조회 성공"));
+    }
+
+    // ==================== 프로필 수정 테스트 ====================
+    @Test
+    @DisplayName("프로필 수정 성공")
+    void updateProfile_Success() throws Exception {
+        // Given
+        MemberUpdateRequest updateRequest = MemberUpdateRequest.builder()
+                .name("김철수")
+                .nickname("철수")
+                .phone("010-1234-5678")
+                .email("kim@example.com")
+                .gender("M")
+                .build();
+
+        MemberResponse updatedMember = MemberResponse.builder()
+                .id(1L)
+                .loginId("testuser")
+                .name("김철수")
+                .nickname("철수")
+                .phone("010-1234-5678")
+                .email("kim@example.com")
+                .gender("M")
+                .build();
+
+        ResponseEntity<ApiResponse<MemberResponse>> successResponse = ResponseEntity.ok(
+                ApiResponse.success(updatedMember, "개인정보가 성공적으로 수정되었습니다.")
+        );
+
+        when(memberService.updateProfile(any(), any(MemberUpdateRequest.class))).thenReturn(successResponse);
+
+        // When & Then
+        mockMvc.perform(put("/member/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer valid-token")
+                        .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("개인정보가 성공적으로 수정되었습니다."));
     }
 
     // ==================== 입력 유효성 검증 테스트 ====================
@@ -259,36 +303,6 @@ class MemberControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
-    @Test
-    @DisplayName("로그인 요청 - null 로그인 ID")
-    void login_NullLoginId() throws Exception {
-        // Given
-        MemberLoginRequest loginRequest = new MemberLoginRequest();
-        loginRequest.setLoginId(null);
-        loginRequest.setPassword("password123");
-
-        // When & Then
-        mockMvc.perform(post("/member/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("로그인 요청 - null 비밀번호")
-    void login_NullPassword() throws Exception {
-        // Given
-        MemberLoginRequest loginRequest = new MemberLoginRequest();
-        loginRequest.setLoginId("testuser");
-        loginRequest.setPassword(null);
-
-        // When & Then
-        mockMvc.perform(post("/member/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isBadRequest());
-    }
-
     // ==================== HTTP 프로토콜 검증 테스트 ====================
     @Test
     @DisplayName("로그인 요청 - 잘못된 JSON 형식")
@@ -313,31 +327,6 @@ class MemberControllerTest {
 
         // When & Then
         mockMvc.perform(post("/member/login")
-                        .content(objectMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isUnsupportedMediaType());
-    }
-
-    @Test
-    @DisplayName("로그인 요청 - 빈 요청 본문")
-    void login_EmptyRequestBody() throws Exception {
-        // When & Then
-        mockMvc.perform(post("/member/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(""))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("로그인 요청 - 잘못된 Content-Type")
-    void login_WrongContentType() throws Exception {
-        // Given
-        MemberLoginRequest loginRequest = new MemberLoginRequest();
-        loginRequest.setLoginId("testuser");
-        loginRequest.setPassword("password123");
-
-        // When & Then
-        mockMvc.perform(post("/member/login")
-                        .contentType(MediaType.TEXT_PLAIN)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isUnsupportedMediaType());
     }

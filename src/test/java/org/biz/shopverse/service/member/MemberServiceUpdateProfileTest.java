@@ -45,7 +45,6 @@ class MemberServiceUpdateProfileTest {
 
     private MemberUpdateRequest memberUpdateRequest;
     private MemberResponse currentMember;
-    private MemberResponse updatedMember;
 
     @BeforeEach
     void setUp() {
@@ -67,16 +66,6 @@ class MemberServiceUpdateProfileTest {
                 .nickname("길동이")
                 .phone("010-9876-5432")
                 .email("hong@example.com")
-                .gender("M")
-                .build();
-
-        updatedMember = MemberResponse.builder()
-                .id(1L)
-                .loginId("testuser")
-                .name("김철수")
-                .nickname("철수")
-                .phone("010-1234-5678")
-                .email("kim@example.com")
                 .gender("M")
                 .build();
     }
@@ -205,5 +194,29 @@ class MemberServiceUpdateProfileTest {
         assertFalse(response.getBody().isSuccess());
         assertEquals("수정 실패", response.getBody().getError());
         assertEquals("개인정보 수정에 실패했습니다.", response.getBody().getMessage());
+    }
+
+    @Test
+    void updateProfile_UserNotFound() {
+        // Given
+        String accessToken = "valid.access.token";
+        String bearerToken = "Bearer " + accessToken;
+        String loginId = "testuser";
+
+        when(request.getHeader("Authorization")).thenReturn(bearerToken);
+        when(jwtTokenProvider.isTokenValid(accessToken)).thenReturn(true);
+        when(jwtTokenProvider.getUserId(accessToken)).thenReturn(loginId);
+        when(memberMapper.findByLoginId(loginId)).thenReturn(null);
+
+        // When
+        ResponseEntity<ApiResponse<MemberResponse>> response = memberService.updateProfile(request, memberUpdateRequest);
+
+        // Then
+        assertNotNull(response);
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertFalse(response.getBody().isSuccess());
+        assertEquals("사용자 없음", response.getBody().getError());
+        assertEquals("사용자를 찾을 수 없습니다.", response.getBody().getMessage());
     }
 }
