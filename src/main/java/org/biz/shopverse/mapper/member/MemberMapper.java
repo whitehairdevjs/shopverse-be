@@ -2,6 +2,7 @@ package org.biz.shopverse.mapper.member;
 
 import org.biz.shopverse.dto.member.MemberWithRoles;
 import org.biz.shopverse.dto.member.request.MemberCreateRequest;
+import org.biz.shopverse.dto.member.request.MemberUpdateRequest;
 import org.biz.shopverse.dto.member.response.MemberResponse;
 
 public interface MemberMapper {
@@ -14,4 +15,6 @@ public interface MemberMapper {
     MemberWithRoles findByMemberWithRoles(String loginId);
 
     int createMember(MemberCreateRequest memberCreateRequest);
+    
+    int updateMember(String loginId, MemberUpdateRequest memberUpdateRequest);
 } 

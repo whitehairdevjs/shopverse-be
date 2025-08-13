@@ -95,4 +95,21 @@
             NOW()
         )
     </insert>
+    
+    <update id="updateMember" parameterType="map">
+        UPDATE members 
+        SET 
+            name = #{memberUpdateRequest.name},
+            nickname = #{memberUpdateRequest.nickname},
+            phone = #{memberUpdateRequest.phone},
+            email = #{memberUpdateRequest.email},
+            gender = #{memberUpdateRequest.gender},
+            birth_date = #{memberUpdateRequest.birthDate},
+            marketing_yn = #{memberUpdateRequest.marketingYn},
+            sms_yn = #{memberUpdateRequest.smsYn},
+            email_yn = #{memberUpdateRequest.emailYn},
+            updated_at = NOW()
+        WHERE login_id = #{loginId}
+        AND status = 'ACTIVE'
+    </update>
 </mapper> 
