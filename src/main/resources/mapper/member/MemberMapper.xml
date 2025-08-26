@@ -93,7 +93,15 @@
             'ACTIVE',
             NOW(),
             NOW()
-        )
+        );
+
+        INSERT INTO member_roles (
+            login_id, 
+            role_id
+        ) VALUES (
+            #{loginId},
+            (SELECT role_id FROM roles WHERE role_code = 'ROLE_USER')
+        );
     </insert>
     
     <update id="updateMember" parameterType="map">
