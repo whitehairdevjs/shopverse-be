@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.biz.shopverse.mapper.product.ProductMapper">
+
+    <select id="findAllCategories" resultType="org.biz.shopverse.domain.product.Category">
+        SELECT 
+            id,
+            code,
+            name,
+            slug,
+            description,
+            parent_id,
+            icon_url,
+            banner_image,
+            sort_order,
+            is_active,
+            seo_title,
+            seo_description,
+            created_at,
+            updated_at
+        FROM categories
+        ORDER BY sort_order ASC, name ASC
+    </select>
+
+    <select id="findActiveCategories" resultType="org.biz.shopverse.domain.product.Category">
+        SELECT 
+            id,
+            code,
+            name,
+            slug,
+            description,
+            parent_id,
+            icon_url,
+            banner_image,
+            sort_order,
+            is_active,
+            seo_title,
+            seo_description,
+            created_at,
+            updated_at
+        FROM categories
+        WHERE is_active = true
+        ORDER BY sort_order ASC, name ASC
+    </select>
+
+</mapper>
