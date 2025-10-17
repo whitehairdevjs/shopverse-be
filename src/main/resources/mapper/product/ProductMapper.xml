@@ -2,6 +2,58 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="org.biz.shopverse.mapper.product.ProductMapper">
+    <select id="selectAllProducts" resultType="org.biz.shopverse.dto.product.response.ProductResponse">
+        SELECT
+            p.id,
+            p.name,
+            p.slug,
+            p.subtitle,
+            p.description,
+            p.short_description,
+            p.price,
+            p.compare_price,
+            p.cost_price,
+            p.category_id,
+            CASE
+                WHEN p.compare_price IS NULL OR p.compare_price = 0 THEN 0
+                ELSE ROUND(((p.compare_price - p.price) / p.compare_price) * 100, 1)
+            END AS discount_percent,
+            p.brand_id,
+            p.sku,
+            p.barcode,
+            p.weight,
+            p.dimensions,
+            p.status,
+            p.visibility,
+            p.is_digital,
+            p.is_subscription,
+            p.is_customizable,
+            p.is_preorder,
+            p.preorder_date,
+            p.track_inventory,
+            p.allow_backorder,
+            p.min_order_quantity,
+            p.max_order_quantity,
+            p.meta_title,
+            p.meta_description,
+            p.search_keywords,
+            p.featured_until,
+            p.average_rating,
+            p.review_count,
+            p.view_count,
+            p.sales_count,
+            p.wishlist_count,
+            p.created_at,
+            p.updated_at,
+            p.published_at,
+            p.deleted_at
+        FROM products p
+        WHERE p.status = 'active'
+          AND p.visibility = 'visible'
+          AND p.deleted_at IS NULL
+        ORDER BY p.created_at DESC
+    </select>
+
     <select id="selectProductsByCategoryId" resultType="org.biz.shopverse.dto.product.response.ProductResponse">
         SELECT
             p.id, -- 상품 고유 ID (자동 증가)
