@@ -106,6 +106,7 @@ public class GlobalExceptionHandler {
         Map<String, Object> details = new HashMap<>();
         details.put("path", request.getDescription(false));
         details.put("exception", ex.getClass().getSimpleName());
+        details.put("timestamp", java.time.LocalDateTime.now().toString());
         
         ApiResponse<String> errorResponse = ApiResponse.error("Invalid Argument", ex.getMessage(), 400);
         errorResponse.setDetails(details);

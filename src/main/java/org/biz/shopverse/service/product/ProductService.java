@@ -26,6 +26,13 @@ public class ProductService {
     }
 
     public List<ProductResponse> getProductsByCategoryId(Long categoryId) {
+        if (categoryId == null) {
+            throw new IllegalArgumentException("카테고리 ID는 필수입니다.");
+        }
+        if (categoryId <= 0) {
+            throw new IllegalArgumentException("카테고리 ID는 양수여야 합니다.");
+        }
+        
         return productMapper.selectProductsByCategoryId(categoryId);
     }
 }
