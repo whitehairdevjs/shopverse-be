@@ -35,4 +35,8 @@ public class ProductService {
         
         return productMapper.selectProductsByCategoryId(categoryId);
     }
+
+    public List<ProductResponse> getAllProducts() {
+        return productMapper.selectAllProducts();
+    }
 }

@@ -12,4 +12,6 @@ public interface ProductMapper {
     List<CategoryResponse> findActiveCategories();
     
     List<ProductResponse> selectProductsByCategoryId(Long categoryId);
+
+    List<ProductResponse> selectAllProducts();
 }

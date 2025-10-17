@@ -32,9 +32,15 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.success(categories, "활성화된 카테고리 목록을 조회했습니다."));
     }
 
-    @GetMapping("/category/{categoryId}")
+    @GetMapping("/{categoryId}")
     public ResponseEntity<ApiResponse<List<ProductResponse>>> getProductsByCategoryId(@PathVariable Long categoryId) {
         List<ProductResponse> products = productService.getProductsByCategoryId(categoryId);
         return ResponseEntity.ok(ApiResponse.success(products, "카테고리별 상품 목록을 조회했습니다."));
+    }
+
+    @GetMapping("/products")
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getAllProducts() {
+        List<ProductResponse> products = productService.getAllProducts();
+        return ResponseEntity.ok(ApiResponse.success(products, "전체 상품 목록을 조회했습니다."));
     }
 }
