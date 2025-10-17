@@ -2,8 +2,71 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="org.biz.shopverse.mapper.product.ProductMapper">
+    <select id="selectProductsByCategoryId" resultType="org.biz.shopverse.dto.product.response.ProductResponse">
+        SELECT
+            p.id, -- 상품 고유 ID (자동 증가)
+            p.name, -- 상품명
+            p.slug, -- SEO 친화적 URL 식별자 (필수)
+            p.subtitle, -- 상품 부제목/간단 설명
+            p.description, -- 상품 상세 설명 (HTML 가능)
+            p.short_description, -- 상품 요약 설명 (500자 이내)
+            p.price, -- 판매 가격 (현재 가격)
+            p.compare_price, -- 할인 전 가격 표시용
+            p.cost_price, -- 상품 원가 (내부 관리용)
+            p.category_id, -- 소속 카테고리 ID
+            CASE
+                WHEN p.compare_price IS NULL OR p.compare_price = 0 THEN 0
+                ELSE ROUND(((p.compare_price - p.price) / p.compare_price) * 100, 1)
+                END AS discount_percent, -- 할인율 (소수점 1자리)
+            p.brand_id, -- 브랜드 ID
+            p.sku, -- 상품 고유번호 (Stock Keeping Unit)
+            p.barcode, -- 바코드/EAN 번호
+            p.weight, -- 상품 무게 (kg, 소수점 3자리)
+            p.dimensions, -- JSON 형태 치수 정보 {"width":10, "height":20, "depth":5}
+            p.status, -- 상품 상태 (draft:임시저장, active:판매중, inactive:판매중단, discontinued:단종)
+            p.visibility, -- 상품 노출 설정 (visible: 일반노출, hidden: 숨김, catalog_only: 카탈로그만)
+            p.is_digital, -- 디지털 상품 여부 (다운로드/스트리밍)
+            p.is_subscription, -- 구독 상품 여부 (정기 결제)
+            p.is_customizable, -- 커스터마이징 가능 여부 (개인화 옵션)
+            p.is_preorder, -- 예약주문 가능 여부
+            p.preorder_date, -- 상품 출시 예정일
+            p.track_inventory, -- 재고 추적 여부 (FALSE시 무제한 판매)
+            p.allow_backorder, -- 품절시 주문 허용 여부
+            p.min_order_quantity, -- 최소 주문 수량
+            p.max_order_quantity, -- 최대 주문 수량
+            p.meta_title, -- SEO 메타 제목 (60자 이내)
+            p.meta_description, -- SEO 메타 설명 (160자 이내)
+            p.search_keywords, -- 검색 키워드 (콤마로 구분)
+            p.featured_until, -- 추천 상품 노출 종료일
+            p.average_rating, -- 평균 평점 (0.0-5.0, 자동 계산)
+            p.review_count, -- 리뷰 개수 (자동 계산)
+            p.view_count, -- 상품 조회수 (비정규화)
+            p.sales_count, -- 판매 수량 (비정규화)
+            p.wishlist_count, -- 찜 횟수 (비정규화)
+            p.created_at, -- 상품 등록 일시
+            p.updated_at, -- 상품 수정 일시 (자동 갱신)
+            p.published_at, -- 상품 공개 일시
+            p.deleted_at -- 상품 삭제 일시 (소프트 삭제)
+        FROM products p
+        WHERE p.category_id IN (
+            WITH RECURSIVE category_tree AS (
+                SELECT id, parent_id, name
+                FROM categories 
+                WHERE id = #{categoryId}
+                UNION ALL
+                SELECT c.id, c.parent_id, c.name
+                FROM categories c
+                INNER JOIN category_tree ct ON c.parent_id = ct.id
+            )
+            SELECT id FROM category_tree
+        )
+        AND p.status = 'active'
+        AND p.visibility = 'visible'
+        AND p.deleted_at IS NULL
+        ORDER BY p.created_at DESC
+    </select>
 
-    <select id="findAllCategories" resultType="org.biz.shopverse.domain.product.Category">
+    <select id="findAllCategories" resultType="org.biz.shopverse.dto.product.response.CategoryResponse">
         SELECT 
             id,
             code,
@@ -23,7 +86,7 @@
         ORDER BY sort_order ASC, name ASC
     </select>
 
-    <select id="findActiveCategories" resultType="org.biz.shopverse.domain.product.Category">
+    <select id="findActiveCategories" resultType="org.biz.shopverse.dto.product.response.CategoryResponse">
         SELECT 
             id,
             code,
