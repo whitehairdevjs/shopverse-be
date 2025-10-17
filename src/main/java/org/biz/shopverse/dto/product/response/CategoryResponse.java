@@ -28,5 +28,4 @@ public class CategoryResponse {
     private String seoDescription;
     private String createdAt;
     private String updatedAt;
-    private List<CategoryResponse> children;
 }
