@@ -19,5 +19,3 @@ public class ProductListPageResponse {
     private boolean hasNext;
     private boolean hasPrevious;
 }
-
-
