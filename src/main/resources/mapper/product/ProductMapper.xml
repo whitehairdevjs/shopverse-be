@@ -47,23 +47,24 @@
     <select id="selectProductsPaged" resultType="org.biz.shopverse.dto.product.response.ProductResponse">
         SELECT
             p.id,
-            p.name,
+            pv.id AS variant_id,
+            COALESCE(pv.name, p.name) as name,
             p.slug,
             p.subtitle,
             p.description,
             p.short_description,
-            p.price,
-            p.compare_price,
+            COALESCE(pv.price, p.price) AS price,
+            COALESCE(pv.compare_price, p.compare_price) AS compare_price,
             p.cost_price,
             p.category_id,
             CASE
-                WHEN p.compare_price IS NULL OR p.compare_price = 0 THEN 0
-                ELSE ROUND(((p.compare_price - p.price) / p.compare_price) * 100, 1)
+            WHEN p.compare_price IS NULL OR p.compare_price = 0 THEN 0
+            ELSE ROUND(((COALESCE(pv.compare_price, p.compare_price) - COALESCE(pv.price, p.price)) / COALESCE(pv.compare_price, p.compare_price)) * 100, 1)
             END AS discount_percent,
             p.brand_id,
-            p.sku,
-            p.barcode,
-            p.weight,
+            COALESCE(pv.sku, p.sku) AS sku,
+            COALESCE(pv.barcode, p.barcode) AS barcode,
+            COALESCE(pv.weight, p.weight) AS weight,
             p.dimensions,
             p.status,
             p.visibility,
@@ -88,26 +89,28 @@
             p.created_at,
             p.updated_at,
             p.published_at,
-            p.deleted_at
+            p.deleted_at,
+            pv."options"
         FROM products p
-        <where>
-            p.status = 'active'
-            AND p.visibility = 'visible'
-            AND p.deleted_at IS NULL
-            <if test="categoryId != null">
-                AND p.category_id IN (
-                    WITH RECURSIVE category_tree AS (
-                        SELECT id, parent_id, name FROM categories WHERE id = #{categoryId}
-                        UNION ALL
-                        SELECT c.id, c.parent_id, c.name FROM categories c INNER JOIN category_tree ct ON c.parent_id = ct.id
-                    )
-                    SELECT id FROM category_tree
+        LEFT JOIN product_variants pv
+            ON pv.product_id = p.id
+        WHERE 1 = 1
+        AND p.status = 'active'
+        AND p.visibility = 'visible'
+        AND p.deleted_at IS NULL
+        <if test="categoryId != null">
+            AND p.category_id IN (
+                WITH RECURSIVE category_tree AS (
+                    SELECT id, parent_id, name FROM categories WHERE id = #{categoryId}
+                    UNION ALL
+                    SELECT c.id, c.parent_id, c.name FROM categories c INNER JOIN category_tree ct ON c.parent_id = ct.id
                 )
-            </if>
-            <if test="search != null and search != ''">
-                AND (LOWER(p.name) LIKE CONCAT('%', LOWER(#{search}), '%') OR LOWER(p.search_keywords) LIKE CONCAT('%', LOWER(#{search}), '%'))
-            </if>
-        </where>
+                SELECT id FROM category_tree
+            )
+        </if>
+        <if test="search != null and search != ''">
+            AND (LOWER(p.name) LIKE CONCAT('%', LOWER(#{search}), '%') OR LOWER(p.search_keywords) LIKE CONCAT('%', LOWER(#{search}), '%'))
+        </if>
         <choose>
             <when test="sort == 'price-low'">ORDER BY p.price ASC</when>
             <when test="sort == 'price-high'">ORDER BY p.price DESC</when>
