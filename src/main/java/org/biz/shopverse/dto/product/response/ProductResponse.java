@@ -17,7 +17,10 @@ public class ProductResponse {
     
     @Schema(description = "상품 고유 ID", example = "1")
     private Long id;
-    
+
+    @Schema(description = "변형 상품 고유 ID", example = "1")
+    private Long variantId;
+
     @Schema(description = "상품명", example = "프리미엄 무선 이어폰")
     private String name;
     
@@ -134,4 +137,8 @@ public class ProductResponse {
     
     @Schema(description = "상품 삭제 일시 (소프트 삭제)", example = "null")
     private String deletedAt;
+
+    @Schema(description = "사용자 지정 옵션 (예: {'color': '블랙', 'storage': '256GB'})", example = "{\"color\": \"블랙\", \"storage\": \"256GB\"}")
+    private Object options;
+
 }
